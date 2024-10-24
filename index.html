@@ -3,20 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Internet Speed Test</title>
+    <title>48 Gal</title>
+    
     <style>
-        *{
-            background-color: grey;
+        /* Basic reset and body styling */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff; /* Light blue background */
+        }
+
+        /* Blurred transparent top bar */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(173, 216, 230, 0.7); /* Light blue with transparency */
+            backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        /* Main content container */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 80px 20px; /* Padding to avoid content overlapping with the top bar */
+        }
+
+        /* Style for media items */
+        .media-item {
+            position: relative;
+            overflow: hidden;
+            background: #e0f7fa;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Style for images */
+        .media-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Style for videos */
+        .media-item video {
+            width: 100%;
+            height: auto;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <script> var password = "48"; (function passcodeprotect() { var passcode = prompt("Enter 2 Digit PassCode"); while (passcode !== password) { alert("Incorrect PassCode"); return passcodeprotect(); } }()); alert('Enjoy!'); </script>
 
-    
-    <video controls autoplay>
-        <source src="https://ab80x08.github.io/a/nbbps.mp4" type="video/mp4">
-    </video>
+    <!-- Top bar -->
+    <div class="top-bar"></div>
+
+    <!-- Main container for the media items -->
+    <div class="container">
+        <!-- Example of an image item -->
+        <div class="media-item">
+            <img src="path_to_your_image.jpg" alt="Image description">
+        </div>
+        <!-- Example of a video item -->
+        <div class="media-item">
+            <video controls>
+                <source src="https://ab80x08.github.io/a/nbbps.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <!-- Add more media items here as needed -->
+    </div>
+
 </body>
 <footer>
     <p>4lex8lue</p>
