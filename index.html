@@ -101,18 +101,18 @@
         
         <!-- Video Grid -->
         <div class="grid-container">
+            
             <!-- Example Video Cards -->
+            
             <div class="video-card">
-                <div class="video-thumbnail">
-                    <video controls>
-                        <source src="https://ab80x08.github.io/a/nbbps.mp4" type="video/mp4">
-                    </video>
-                </div>
+                <div class="video-thumbnail"></div>
                 <div class="video-info">
                     <p class="video-title">creamed out pussy</p>
                     <p class="video-channel">Phubfucks</p>
                 </div>
             </div>
+
+            
             <div class="video-card">
                 <div class="video-thumbnail"></div>
                 <div class="video-info">
@@ -120,6 +120,8 @@
                     <p class="video-channel">Channel 2</p>
                 </div>
             </div>
+
+            
             <div class="video-card">
                 <div class="video-thumbnail"></div>
                 <div class="video-info">
@@ -127,6 +129,9 @@
                     <p class="video-channel">Channel 3</p>
                 </div>
             </div>
+
+
+            
             <!-- Add more video cards as needed -->
         </div>
     </div>
@@ -134,9 +139,9 @@
     <script>
         // Password protection
         window.onload = function() {
-            var password = prompt("Please enter the 2-digit password to access this page:");
+            var password = prompt("What's the PassCode?");
             if (password !== "48") { // Set your desired two-digit password here
-                alert("Incorrect password. Access denied.");
+                alert("Well, I think you guessed it wrong.");
                 document.body.innerHTML = ""; // Clear the page if password is incorrect
                 return;
             }
