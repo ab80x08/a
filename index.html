@@ -3,83 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>48 Gal</title>
-    
+    <title>4lex8lue</title>
     <style>
-        /* Basic reset and body styling */
+        /* General Styles */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #f0f8ff; /* Light blue background */
+            background-color: #f9f9f9;
         }
-
-        /* Blurred transparent top bar */
-        .top-bar {
-            text-align: center;
+        .startup-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 60px;
-            background: rgba(173, 216, 230, 0.7); /* Light blue with transparency */
-            backdrop-filter: blur(10px);
-            z-index: 1;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #fff;
+            font-size: 2rem;
+            z-index: 1000;
         }
-
-        /* Main content container */
+        .startup-screen img {
+            width: 200px;
+            margin-bottom: 20px;
+        }
         .container {
+            display: none; /* Hidden initially for startup screen */
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8f8f8;
+            padding: 10px 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .header img {
+            height: 30px;
+        }
+        .header input {
+            width: 50%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 15px;
-            padding: 80px 20px; /* Padding to avoid content overlapping with the top bar */
+            margin-top: 20px;
         }
-
-        /* Style for media items */
-        .media-item {
-            position: relative;
-            overflow: hidden;
-            background: #e0f7fa;
+        .video-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            cursor: pointer;
         }
-
-        /* Style for images */
-        .media-item img {
+        .video-thumbnail {
             width: 100%;
-            height: auto;
-            display: block;
+            height: 150px;
+            background-color: #ccc;
         }
-
-        /* Style for videos */
-        .media-item video {
-            width: 100%;
-            height: auto;
-            display: block;
+        .video-info {
+            padding: 10px;
+        }
+        .video-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        .video-channel {
+            font-size: 14px;
+            color: #666;
         }
     </style>
 </head>
 <body>
-
-    <!-- Top bar -->
-    <div class="top-bar">
-        <p>PicGallery</p>
+    <!-- Startup Screen -->
+    <div class="startup-screen" id="startup-screen">
+        <img src="https://ab80x08.github.io/a/p1.jpg" alt="Image">
+        4lex8lue
     </div>
 
-    <!-- Main container for the media items -->
-    <div class="container">
-        <!-- Example of an image item -->
-        <div class="media-item">
-            <img src="https://ab80x08.github.io/a/p1.jpg" alt="Image description">
+    <!-- Main Content -->
+    <div class="container" id="main-container">
+        <!-- Header -->
+        <div class="header">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" alt="Logo" />
+            <input type="text" placeholder="Search" />
         </div>
-        <!-- Example of a video item -->
-        <div class="media-item">
-            <video controls autoplay>
-                <source src="https://ab80x08.github.io/a/v1.mp4" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+        
+        <!-- Video Grid -->
+        <div class="grid-container">
+            <!-- Example Video Cards -->
+            <div class="video-card">
+                <div class="video-thumbnail">
+                    <video controls>
+                        <source src="https://ab80x08.github.io/a/nbbps.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="video-info">
+                    <p class="video-title">creamed out pussy</p>
+                    <p class="video-channel">Phubfucks</p>
+                </div>
+            </div>
+            <div class="video-card">
+                <div class="video-thumbnail"></div>
+                <div class="video-info">
+                    <p class="video-title">Sample Video 2</p>
+                    <p class="video-channel">Channel 2</p>
+                </div>
+            </div>
+            <div class="video-card">
+                <div class="video-thumbnail"></div>
+                <div class="video-info">
+                    <p class="video-title">Sample Video 3</p>
+                    <p class="video-channel">Channel 3</p>
+                </div>
+            </div>
+            <!-- Add more video cards as needed -->
         </div>
-        <!-- Add more media items here as needed -->
     </div>
 
+    <script>
+        // Password protection
+        window.onload = function() {
+            var password = prompt("Please enter the 2-digit password to access this page:");
+            if (password !== "48") { // Set your desired two-digit password here
+                alert("Incorrect password. Access denied.");
+                document.body.innerHTML = ""; // Clear the page if password is incorrect
+                return;
+            }
+
+            // If the password is correct, show the main content
+            setTimeout(function() {
+                document.getElementById('startup-screen').style.display = 'none';
+                document.getElementById('main-container').style.display = 'block';
+            }, 2000); // 2-second delay for the startup screen
+        };
+    </script>
 </body>
 </html>
