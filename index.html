@@ -3,159 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4lex8lue</title>
-    <style>
-        /* General Styles */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-        }
-        .startup-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            color: #fff;
-            font-size: 2rem;
-            z-index: 1000;
-        }
-        .startup-screen img {
-            width: 200px;
-            margin-bottom: 20px;
-        }
-        .container {
-            display: none; /* Hidden initially for startup screen */
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: #f8f8f8;
-            padding: 10px 20px;
-            border-bottom: 1px solid #ddd;
-        }
-        .header img {
-            height: 30px;
-        }
-        .header input {
-            width: 50%;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .video-card {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-        }
-        .video-thumbnail {
-            width: 100%;
-            height: 150px;
-            background-color: #ccc;
-        }
-        .video-info {
-            padding: 10px;
-        }
-        .video-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin: 0;
-        }
-        .video-channel {
-            font-size: 14px;
-            color: #666;
-        }
-    </style>
+    <title>Photo Gallery</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Startup Screen -->
-    <div class="startup-screen" id="startup-screen">
-        <img src="https://ab80x08.github.io/a/logo.png" alt="Image">
-        4lex8lue
+    <div id="startup-screen" class="startup">
+        <img src="htts://ab80x08.github.io/a/logo.png">
+        <h1>4lex8lue</h1>
     </div>
 
-    <!-- Main Content -->
-    <div class="container" id="main-container">
-        <!-- Header -->
-        <div class="header">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" alt="Logo" />
-            <input type="text" placeholder="Search" />
-        </div>
-        
-        <!-- Video Grid -->
-        <div class="grid-container">
-            
-            <!-- Example Video Cards -->
-            
-            <div class="video-card">
-                <div class="video-thumbnail">
-                    <video controls>
-                        <source src="https://ab80x08.github.io/a/v1.mp4" type="video/mp4">
-                    </video>
-                </div>
-                <div class="video-info">
-                    <p class="video-title">creamed out pussy</p>
-                    <p class="video-channel">Phubfucks</p>
-                </div>
-            </div>
-
-            
-            <div class="video-card">
-                <div class="video-thumbnail"></div>
-                <div class="video-info">
-                    <p class="video-title">Sample Video 2</p>
-                    <p class="video-channel">Channel 2</p>
-                </div>
-            </div>
-
-            
-            <div class="video-card">
-                <div class="video-thumbnail"></div>
-                <div class="video-info">
-                    <p class="video-title">Sample Video 3</p>
-                    <p class="video-channel">Channel 3</p>
-                </div>
-            </div>
-
-
-            
-            <!-- Add more video cards as needed -->
+    <div class="gallery-container">
+        <div class="gallery">
+            <!-- Example photo items, replace with your own image paths -->
+            <img src="/Logo.png" alt="Photo 1">
+            <img src="/p1.jpg" alt="Photo 2">
+            <img src="photo3.jpg" alt="Photo 3">
+            <!-- Add more images as needed -->
         </div>
     </div>
 
-    <script>
-        // Password protection
-        window.onload = function() {
-            var password = prompt("What's the PassCode?");
-            if (password !== "48") { // Set your desired two-digit password here
-                alert("Well, I think you guessed it wrong.");
-                document.body.innerHTML = ""; // Clear the page if password is incorrect
-                return;
-            }
-
-            // If the password is correct, show the main content
-            setTimeout(function() {
-                document.getElementById('startup-screen').style.display = 'none';
-                document.getElementById('main-container').style.display = 'block';
-            }, 2000); // 2-second delay for the startup screen
-        };
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
