@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locked Page</title>
+</head>
+<body>
+    <div id="login">
+        <h2>Enter Password</h2>
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="checkPassword()">Submit</button>
+        <p id="message" style="color: red;"></p>
+    </div>
+
+    <script>
+        // Set your password and redirect URL here
+        const password = "4lex8lue";
+        const redirectUrl = "https://ab80x08.github.io/a/p.html"; // Replace with the URL you want to redirect to
+
+        function checkPassword() {
+            const inputPassword = document.getElementById("password").value;
+            const message = document.getElementById("message");
+            
+            if (inputPassword === password) {
+                // Redirect to another page if the password is correct
+                window.location.href = redirectUrl;
+            } else {
+                message.textContent = "Incorrect password";
+            }
+        }
+    </script>
+</body>
+<footer>
+  <p>4lex8lue</p>
+</footer>
+</html>
