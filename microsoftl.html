@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swipe Animation Page</title>
+  <style>
+    /* Basic Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Main container to hold swipe pages */
+    .swipe-container {
+      display: flex;
+      overflow-x: hidden;
+      width: 100vw;
+      height: 100vh;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+    }
+
+    /* Individual swipe pages */
+    .page {
+      min-width: 100vw;
+      height: 100vh;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: white;
+      scroll-snap-align: start;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    /* Background colors for pages */
+    .page1 { background: #1e90ff; }
+    .page2 { background: #32cd32; }
+    .page3 { background: #ff6347; }
+
+    /* Parallax effect for inner content */
+    .content {
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+    }
+
+    /* Parallax movement */
+    .page:hover .content {
+      transform: translateX(10px);
+    }
+
+    /* Navigation dots */
+    .nav-dots {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.5;
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+
+    .dot.active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Swipe Container -->
+  <div class="swipe-container" id="swipeContainer">
+    <div class="page page1"><div class="content">Page 1</div></div>
+    <div class="page page2"><div class="content">Page 2</div></div>
+    <div class="page page3"><div class="content">Page 3</div></div>
+  </div>
+
+  <!-- Navigation Dots -->
+  <div class="nav-dots" id="navDots">
+    <div class="dot active" data-index="0"></div>
+    <div class="dot" data-index="1"></div>
+    <div class="dot" data-index="2"></div>
+  </div>
+
+  <script>
+    // JavaScript to handle the swipe navigation and active dot updates
+    const swipeContainer = document.getElementById('swipeContainer');
+    const dots = document.querySelectorAll('.dot');
+
+    // Update dots on scroll
+    swipeContainer.addEventListener('scroll', () => {
+      const scrollPosition = swipeContainer.scrollLeft;
+      const pageWidth = window.innerWidth;
+      const activeIndex = Math.round(scrollPosition / pageWidth);
+
+      dots.forEach(dot => dot.classList.remove('active'));
+      dots[activeIndex].classList.add('active');
+    });
+
+    // Dot click to navigate to page
+    dots.forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        const index = e.target.dataset.index;
+        swipeContainer.scrollTo({
+          left: index * window.innerWidth,
+          behavior: 'smooth'
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>
