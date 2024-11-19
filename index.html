@@ -1,46 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Locked Page</title>
-    <style>
-        .speedlogo {
-    width: 50px; /* Adjust size as needed */
-    height: 50px; /* Make height and width equal for a perfect circle */
-    border-radius: 50%; /* Rounds the corners to make the image circular */
-    object-fit: cover; /* Ensures the image scales nicely within the circle */
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RedirectorPage</title>
+  <style>
+    /* Basic Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    </style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e90ff, #ff7f50);
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 30px;
+      width: 300px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .container h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
+    .container p {
+      font-size: 1rem;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      background: #ff7f50;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .button:hover {
+      background: #e5673d;
+    }
+
+    .error {
+      color: #ff4d4d;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
-    <div id="login">
-        <h2>Enter Password</h2>
-        <input type="password" id="password" placeholder="Enter Password">
-        <button onclick="checkPassword()">Submit</button>
-        <p id="message" style="color: red;"></p>
+
+  <div class="container">
+    <h1>Code</h1>
+    <p>Enter the code provided to redirect to your destination.</p>
+    <div class="input-group">
+      <input type="text" id="codeInput" placeholder="Enter your code" />
     </div>
+    <button class="button" onclick="redirect()">Redirect</button>
+    <div id="errorMessage" class="error"></div>
+  </div>
 
-    <script>
-        // Set your password and redirect URL here
-        const password = "4lex8lue";
-        const redirectUrl = "https://ab80x08.github.io/a/p.html"; // Replace with the URL you want to redirect to
+  <script>
+    function redirect() {
+      const code = document.getElementById("codeInput").value.trim();
+      const errorMessage = document.getElementById("errorMessage");
 
-        function checkPassword() {
-            const inputPassword = document.getElementById("password").value;
-            const message = document.getElementById("message");
-            
-            if (inputPassword === password) {
-                // Redirect to another page if the password is correct
-                window.location.href = redirectUrl;
-            } else {
-                message.textContent = "Incorrect Password";
-            }
-        }
-    </script>
+      // Define redirection rules
+      const redirectionMap = {
+        "pgal": "https://ab80x08.github.io/a/p.html",
+        "an15": "https://ab80x08.github.io/a/android15.html",
+        "reld": "https://ab80x08.github.io/a/ist.html"
+      };
+
+      if (code in redirectionMap) {
+        // Redirect to the corresponding URL
+        window.location.href = redirectionMap[code];
+      } else {
+        // Show error message if the code is invalid
+        errorMessage.textContent = "Invalid code. Please try again.";
+      }
+    }
+  </script>
+
 </body>
-<footer>
-    <a href="https://ab80x08.github.io/a/ist.html"><img src="https://ab80x08.github.io/a/Logo.png" alt="hreflogo" class="speedlogo"></a>
-</footer>
 </html>
