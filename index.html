@@ -5,6 +5,7 @@
   <link rel="manifest" href="https://ab80x08.github.io/a/manifest.json">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RedirectorPage</title>
+  <link rel="icon" type="image/x-icon" href="https://ab80x08.github.io/a/ab80x08.png">
   <style>
     /* Basic Reset */
     * {
@@ -99,10 +100,12 @@
 
       // Define redirection rules
       const redirectionMap = {
-        "pgal": "https://ab80x08.github.io/a/p.html",
-        "logo": "https://ab80x08.github.io/a/Logo.png",
-        "an15": "https://ab80x08.github.io/a/android15.html",
-        "reld": "https://ab80x08.github.io/a/ist.html"
+        "PicGallery": "https://ab80x08.github.io/a/p.html",
+        "Logo": "https://ab80x08.github.io/a/Logo.png",
+        "Android15": "https://ab80x08.github.io/a/android15.html",
+        "RawCam": "https://ab80x08.github.io/RawCam",
+        
+        "Reload": "https://ab80x08.github.io/a/ist.html"
       };
 
       if (code in redirectionMap) {
@@ -110,7 +113,7 @@
         window.location.href = redirectionMap[code];
       } else {
         // Show error message if the code is invalid
-        errorMessage.textContent = "Invalid code. Please try again.";
+        errorMessage.textContent = "Code not found. Please try again.";
       }
     }
   </script>
