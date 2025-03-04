@@ -9,6 +9,18 @@
             margin: 0;
             overflow: hidden;
             background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
         }
         .dot {
             position: absolute;
@@ -21,24 +33,29 @@
     </style>
 </head>
 <body>
+
+    <button id="startButton">Enable Motion</button>
+
     <script>
         const numDots = 50;
         const dots = [];
 
         // Create random dots
-        for (let i = 0; i < numDots; i++) {
-            let dot = document.createElement("div");
-            dot.className = "dot";
-            dot.style.left = Math.random() * window.innerWidth + "px";
-            dot.style.top = Math.random() * window.innerHeight + "px";
-            document.body.appendChild(dot);
-            dots.push(dot);
+        function createDots() {
+            for (let i = 0; i < numDots; i++) {
+                let dot = document.createElement("div");
+                dot.className = "dot";
+                dot.style.left = Math.random() * window.innerWidth + "px";
+                dot.style.top = Math.random() * window.innerHeight + "px";
+                document.body.appendChild(dot);
+                dots.push(dot);
+            }
         }
 
         // Handle accelerometer movement
-        window.addEventListener("deviceorientation", (event) => {
-            let x = event.gamma;  // Left/Right tilt (-90 to 90)
-            let y = event.beta;   // Front/Back tilt (-180 to 180)
+        function handleMotion(event) {
+            let x = event.gamma || 0;  // Left/Right tilt (-90 to 90)
+            let y = event.beta || 0;   // Front/Back tilt (-180 to 180)
 
             dots.forEach(dot => {
                 let moveX = (x / 10) * 5;
@@ -50,7 +67,35 @@
                 dot.style.left = Math.max(0, Math.min(window.innerWidth - 10, currentX + moveX)) + "px";
                 dot.style.top = Math.max(0, Math.min(window.innerHeight - 10, currentY + moveY)) + "px";
             });
-        });
+        }
+
+        // Request permission for motion sensors (iOS 13+ requires this)
+        function requestMotionPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === "function") {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === "granted") {
+                            startMotion();
+                        } else {
+                            alert("Permission denied. Please allow motion access.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                startMotion(); // Android and older iOS versions don’t need permission
+            }
+        }
+
+        // Start motion tracking
+        function startMotion() {
+            document.getElementById("startButton").style.display = "none";
+            createDots();
+            window.addEventListener("deviceorientation", handleMotion);
+        }
+
+        // Button click to request permission
+        document.getElementById("startButton").addEventListener("click", requestMotionPermission);
     </script>
+
 </body>
 </html>
