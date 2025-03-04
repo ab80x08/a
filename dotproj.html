@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Dots</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        .dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        const numDots = 50;
+        const dots = [];
+
+        // Create random dots
+        for (let i = 0; i < numDots; i++) {
+            let dot = document.createElement("div");
+            dot.className = "dot";
+            dot.style.left = Math.random() * window.innerWidth + "px";
+            dot.style.top = Math.random() * window.innerHeight + "px";
+            document.body.appendChild(dot);
+            dots.push(dot);
+        }
+
+        // Handle accelerometer movement
+        window.addEventListener("deviceorientation", (event) => {
+            let x = event.gamma;  // Left/Right tilt (-90 to 90)
+            let y = event.beta;   // Front/Back tilt (-180 to 180)
+
+            dots.forEach(dot => {
+                let moveX = (x / 10) * 5;
+                let moveY = (y / 10) * 5;
+
+                let currentX = parseFloat(dot.style.left);
+                let currentY = parseFloat(dot.style.top);
+
+                dot.style.left = Math.max(0, Math.min(window.innerWidth - 10, currentX + moveX)) + "px";
+                dot.style.top = Math.max(0, Math.min(window.innerHeight - 10, currentY + moveY)) + "px";
+            });
+        });
+    </script>
+</body>
+</html>
