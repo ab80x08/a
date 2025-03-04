@@ -3,99 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Dots</title>
+    <title>Accelerometer Dots</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background: black;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            flex-direction: column;
+            color: white;
+            font-family: Arial, sans-serif;
         }
-        #startButton {
+        canvas {
             position: absolute;
-            top: 50%;
+            top: 0;
+            left: 0;
+        }
+        #startBtn {
             padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .dot {
-            position: absolute;
-            width: 10px;
-            height: 10px;
+            font-size: 18px;
             background: white;
-            border-radius: 50%;
-            transition: transform 0.1s linear;
+            color: black;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-
-    <button id="startButton">Enable Motion</button>
-
+    <canvas id="canvas"></canvas>
+    <button id="startBtn">Enable Motion</button>
     <script>
-        const numDots = 50;
-        const dots = [];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        // Create random dots
-        function createDots() {
-            for (let i = 0; i < numDots; i++) {
-                let dot = document.createElement("div");
-                dot.className = "dot";
-                dot.style.left = Math.random() * window.innerWidth + "px";
-                dot.style.top = Math.random() * window.innerHeight + "px";
-                document.body.appendChild(dot);
-                dots.push(dot);
-            }
-        }
+        const dots = Array.from({ length: 100 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 4 + 1
+        }));
 
-        // Handle accelerometer movement
+        let tiltX = 0, tiltY = 0;
+
         function handleMotion(event) {
-            let x = event.gamma || 0;  // Left/Right tilt (-90 to 90)
-            let y = event.beta || 0;   // Front/Back tilt (-180 to 180)
+            tiltX = event.accelerationIncludingGravity.x * 2;
+            tiltY = event.accelerationIncludingGravity.y * 2;
+        }
 
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             dots.forEach(dot => {
-                let moveX = (x / 10) * 5;
-                let moveY = (y / 10) * 5;
-
-                let currentX = parseFloat(dot.style.left);
-                let currentY = parseFloat(dot.style.top);
-
-                dot.style.left = Math.max(0, Math.min(window.innerWidth - 10, currentX + moveX)) + "px";
-                dot.style.top = Math.max(0, Math.min(window.innerHeight - 10, currentY + moveY)) + "px";
+                dot.x += tiltX * 0.5;
+                dot.y += tiltY * 0.5;
+                if (dot.x > canvas.width) dot.x = 0;
+                if (dot.x < 0) dot.x = canvas.width;
+                if (dot.y > canvas.height) dot.y = 0;
+                if (dot.y < 0) dot.y = canvas.height;
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.size, 0, Math.PI * 2);
+                ctx.fill();
             });
+            requestAnimationFrame(animate);
         }
 
-        // Request permission for motion sensors (iOS 13+ requires this)
-        function requestMotionPermission() {
-            if (typeof DeviceMotionEvent.requestPermission === "function") {
-                DeviceMotionEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === "granted") {
-                            startMotion();
-                        } else {
-                            alert("Permission denied. Please allow motion access.");
-                        }
-                    })
-                    .catch(console.error);
+        startBtn.addEventListener('click', async () => {
+            if (DeviceMotionEvent.requestPermission) {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    window.addEventListener('devicemotion', handleMotion);
+                    startBtn.style.display = 'none';
+                    animate();
+                } else {
+                    alert('Motion access denied');
+                }
             } else {
-                startMotion(); // Android and older iOS versions don’t need permission
+                window.addEventListener('devicemotion', handleMotion);
+                startBtn.style.display = 'none';
+                animate();
             }
-        }
-
-        // Start motion tracking
-        function startMotion() {
-            document.getElementById("startButton").style.display = "none";
-            createDots();
-            window.addEventListener("deviceorientation", handleMotion);
-        }
-
-        // Button click to request permission
-        document.getElementById("startButton").addEventListener("click", requestMotionPermission);
+        });
     </script>
-
 </body>
 </html>
