@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Links</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(270deg, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: backgroundMove 10s infinite alternate;
+            font-family: Arial, sans-serif;
+        }
+
+        @keyframes backgroundMove {
+            0% { filter: blur(10px) saturate(1.2); }
+            100% { filter: blur(20px) saturate(1.5); }
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: white;
+        }
+
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .links a {
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .links a:hover {
+            background: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Social Links</h1>
+        <div class="links">
+            <a href="#" target="_blank">Facebook</a>
+            <a href="#" target="_blank">YouTube</a>
+            <a href="#" target="_blank">Instagram</a>
+            <a href="#" target="_blank">X (Twitter)</a>
+        </div>
+    </div>
+</body>
+</html>
