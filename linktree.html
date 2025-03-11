@@ -11,23 +11,46 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(270deg, #6a11cb, #2575fc);
-            background-size: 400% 400%;
-            animation: backgroundMove 10s infinite alternate;
+            overflow: hidden;
             font-family: Arial, sans-serif;
+            background: #2c2c2c;
         }
 
         @keyframes backgroundMove {
-            0% { filter: blur(10px) saturate(1.2); }
-            100% { filter: blur(20px) saturate(1.5); }
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .particles {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); opacity: 0.7; }
+            50% { opacity: 0.3; }
+            100% { transform: translateY(-100vh); opacity: 0; }
         }
 
         .container {
             text-align: center;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 102, 204, 0.3);
             padding: 20px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
@@ -55,6 +78,7 @@
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
     <div class="container">
         <h1>My Social Links</h1>
         <div class="links">
@@ -64,5 +88,23 @@
             <a href="#" target="_blank">X (Twitter)</a>
         </div>
     </div>
+
+    <script>
+        function createParticles() {
+            const particleContainer = document.getElementById("particles");
+            for (let i = 0; i < 30; i++) {
+                let particle = document.createElement("div");
+                particle.classList.add("particle");
+                let size = Math.random() * 6 + 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                particleContainer.appendChild(particle);
+            }
+        }
+        createParticles();
+    </script>
 </body>
 </html>
