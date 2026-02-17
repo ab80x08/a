@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+  .tree-nav ul { list-style-type: none; padding-left: 20px; }
+  .tree-nav li { margin: 10px 0; border-left: 2px solid #ccc; padding-left: 15px; }
+  .root { font-weight: bold; font-size: 1.2em; color: #2c3e50; }
+  .parent { color: #3498db; }
+  .child { color: #7f8c8d; }
+  a { text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav class="tree-nav">
+  <ul>
+    <li>
+      <a href="#" class="root">🏠 Home</a>
+      <ul>
+        <li>
+          <a href="#" class="parent">📁 Services</a>
+          <ul>
+            <li><a href="#" class="child">📄 Web Development</a></li>
+            <li><a href="#" class="child">📄 UI/UX Design</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#" class="parent">📁 About Us</a>
+          <ul>
+            <li><a href="#" class="child">📄 Our Mission</a></li>
+            <li><a href="#" class="child">📄 Meet the Team</a></li>
+          </ul>
+        </li>
+        <li><a href="#" class="child">📄 Contact</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+</body>
+</html>
