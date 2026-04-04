@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Delay Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; }
+        .container { width: 80%; max-width: 800px; margin-top: 50px; background: white; padding: 20px; border-radius: 8px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Task Delay History</h2>
+    <canvas id="delayChart"></canvas>
+</div>
+
+<script>
+    // --- EASY DATA INPUT SECTION ---
+    // Just add new lines here: { day: X, delay: Y }
+    const taskData = [
+        { day: 1, delay: 10 },
+        { day: 2, delay: 25 },
+        { day: 3, delay: 5 },
+        { day: 5, delay: 40 },
+        { day: 7, delay: 15 },
+        { day: 10, delay: 60 }
+    ];
+    // -------------------------------
+
+    const ctx = document.getElementById('delayChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line', 
+        data: {
+            labels: taskData.map(item => `Day ${item.day}`), // X-Axis Labels
+            datasets: [{
+                label: 'Delay (Minutes)',
+                data: taskData.map(item => item.delay), // Y-Axis Data
+                borderColor: '#3e95cd',
+                backgroundColor: 'rgba(62, 149, 205, 0.2)',
+                fill: true,
+                tension: 0.3, // Makes the line curvy
+                borderWidth: 2
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Completion Day' } },
+                y: { 
+                    beginAtZero: true,
+                    title: { display: true, text: 'Delay in Minutes' } 
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
