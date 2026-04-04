@@ -27,7 +27,7 @@
         { day: 3, delay: 8 },
         { day: 4, delay: 00 },
         { day: 5, delay: 00 },
-        { day: 25, delay: 00 }
+        { day: 15, delay: 00 }
     ];
     // -------------------------------
 
@@ -36,15 +36,15 @@
     new Chart(ctx, {
         type: 'line', 
         data: {
-            labels: taskData.map(item => `D ${item.day}`), // X-Axis Labels
+            labels: taskData.map(item => `D${item.day}`), // X-Axis Labels
             datasets: [{
                 label: 'Delay (Minutes)',
                 data: taskData.map(item => item.delay), // Y-Axis Data
                 borderColor: '#3e95cd',
                 backgroundColor: 'rgba(62, 149, 205, 0.2)',
                 fill: true,
-                tension: 0.3, // Makes the line curvy
-                borderWidth: 2
+                tension: 0.25, // Makes the line curvy
+                borderWidth: 1.2
             }]
         },
         options: {
