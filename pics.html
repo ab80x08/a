@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glass Photo Gallery</title>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --blur-amount: 15px;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
+            background-color: #f0f0f5; /* Light grey background like iOS */
+            padding-top: 80px; /* Space for the header */
+        }
+
+        /* The Glass Header (just like Apple's) */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount)); /* Safari support */
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 4px; /* Tight gap like the Photos app */
+            padding: 4px;
+        }
+
+        .photo-card {
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            background: #ddd;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .photo-card:hover {
+            opacity: 0.9;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Glass Navigation Bar at the bottom */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
+            padding: 10px 30px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-item {
+            color: #007aff; /* Apple Blue */
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <strong>All Photos</strong>
+</header>
+
+<div class="gallery">
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=1" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=2" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=3" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=4" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=5" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=6" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=7" alt="Photo"></div>
+    <div class="photo-card"><img src="https://picsum.photos/400/400?random=8" alt="Photo"></div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="#" class="nav-item">Library</a>
+    <a href="#" class="nav-item">For You</a>
+    <a href="#" class="nav-item">Albums</a>
+    <a href="#" class="nav-item">Search</a>
+</nav>
+
+</body>
+</html>
