@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Balance History</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --green: #22c55e;
+            --red: #ef4444;
+            --border: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .balance-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-card h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .balance-card .amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .history-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-details .title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-details .date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .item-amount {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .credit { color: var(--green); }
+        .debit { color: var(--red); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="balance-card">
+        <h2>Current Balance</h2>
+        <div class="amount" id="total-balance">$0.00</div>
+    </div>
+
+    <h3>Transaction History</h3>
+    <ul class="history-list" id="history-list"></ul>
+</div>
+
+<script>
+    // ==========================================
+    // SET YOUR BASE/STARTING BALANCE HERE
+    // ==========================================
+    const STARTING_BALANCE = 1000.00;
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('./data.json');
+            const transactions = await response.json();
+
+            const listEl = document.getElementById("history-list");
+            const balanceEl = document.getElementById("total-balance");
+            
+            let total = STARTING_BALANCE;
+            listEl.innerHTML = "";
+
+            // Sort transactions by latest date first
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            transactions.forEach(item => {
+                if (item.type === "credit") {
+                    total += item.amount;
+                } else {
+                    total -= item.amount;
+                }
+
+                const li = document.createElement("li");
+                li.className = "history-item";
+                
+                const sign = item.type === "credit" ? "+" : "-";
+                const colorClass = item.type === "credit" ? "credit" : "debit";
+
+                li.innerHTML = `
+                    <div class="item-details">
+                        <div class="title">${item.title}</div>
+                        <div class="date">${item.date}</div>
+                    </div>
+                    <div class="item-amount ${colorClass}">
+                        ${sign}$${item.amount.toFixed(2)}
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+
+            balanceEl.textContent = `$${total.toFixed(2)}`;
+        } catch (error) {
+            console.error("Error loading transaction data:", error);
+        }
+    }
+
+    loadHistory();
+</script>
+
+</body>
+</html>
