@@ -1,5 +1,5 @@
 [
-    { "date": "2026-07-26", "title": "Snacks", "amount": 15.0, "type": "debit" }
+    { "date": "2026-07-26", "title": "Snacks", "amount": 15.0, "type": "debit" },
     { "date": "2026-07-26", "title": "Handover", "amount": 0.0, "type": "debit" },
     { "date": "2026-07-26", "title": "Exchange of 100", "amount": 0.0, "type": "credit" },
     { "date": "2026-07-26", "title": "Calcs and Crrt", "amount": 115.0, "type": "credit" }
