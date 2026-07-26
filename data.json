@@ -1,0 +1,4 @@
+[
+    { "date": "2026-07-26", "title": "Snacks", "amount": 10.0, "type": "debit" },
+    { "date": "2026-07-26", "title": "Exchange of 100", "amount": 0.0, "type": "credit" }
+]
