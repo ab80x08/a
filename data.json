@@ -1,5 +1,6 @@
 [
-    { "date": "2026-07-29", "title": "Multiplug RnO", "amount": 200, "type": "debit" },
+    { "date": "2026-07-29", "title": "Sharing WFb", "amount": 150, "type": "credit" },
+    { "date": "2026-07-29", "title": "Multiplug RnO", "amount": 70, "type": "debit" },
     { "date": "2026-07-28", "title": "WiFi 56", "amount": 800, "type": "debit" },
     { "date": "2026-07-26", "title": "Snacks", "amount": 15.0, "type": "debit" },
     { "date": "2026-07-26", "title": "Handover", "amount": 0.0, "type": "debit" },
