@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Real-Time Audio Spectrum</title>
+  <title>Real-Time Audio Spectrum (Precise)</title>
   <style>
     * {
       box-sizing: border-box;
@@ -20,84 +20,115 @@
       justify-content: center;
       min-height: 100vh;
       overflow: hidden;
+      padding: 24px;
     }
     h1 {
       margin-bottom: 8px;
       font-weight: 600;
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       letter-spacing: 0.5px;
     }
     p {
       color: #8b949e;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
       font-size: 0.9rem;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
     }
     button {
       background-color: #238636;
       color: #ffffff;
       border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
+      padding: 10px 18px;
+      font-size: 0.95rem;
       font-weight: 600;
       border-radius: 6px;
       cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      margin-bottom: 24px;
+      transition: background-color 0.15s ease, transform 0.06s ease;
     }
-    button:hover {
-      background-color: #2ea043;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
+    button:hover { background-color: #2ea043; }
+    button:active { transform: scale(0.99); }
     canvas {
       background: #161b22;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       border: 1px solid #30363d;
-      max-width: 90vw;
+      width: 90vw;
+      max-width: 1200px;
+      height: 320px;
     }
+    .note { color: #8b949e; font-size: 0.8rem; margin-top: 12px; }
   </style>
 </head>
 <body>
 
   <h1>Real-Time Audio Spectrum</h1>
-  <p>Click start to visualize ambient sounds from your microphone.</p>
-  <button id="startButton">Start Microphone</button>
-  
-  <canvas id="canvas" width="800" height="400"></canvas>
+  <p>Click Start to visualize ambient sounds from your microphone. This view uses higher FFT resolution and perceptual (log) frequency grouping for improved precision.</p>
+
+  <div class="controls">
+    <button id="startButton">Start Microphone</button>
+    <button id="stopButton" style="display:none; background:#c026d3">Stop</button>
+  </div>
+
+  <canvas id="canvas" width="800" height="320"></canvas>
+  <div class="note">Higher FFT size + log-average bins = better frequency precision for human hearing.</div>
 
   <script>
     const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
 
     let audioCtx;
     let analyser;
     let microphone;
     let dataArray;
     let bufferLength;
+    let rafId = null;
     let isVisualizing = false;
+
+    // Precision settings
+    const FFT_SIZE = 2048; // higher FFT for better frequency resolution (power of two)
+    const SMOOTHING = 0.85; // smoothingTimeConstant for temporal smoothing
+
+    // Resize canvas for high-DPI displays
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(300, rect.width);
+      const height = Math.max(120, rect.height);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing operations
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     async function initAudio() {
       try {
-        // Request microphone access
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Initialize Web Audio Context
+
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
-        
-        // Fast Fourier Transform size (controls resolution of frequencies)
-        analyser.fftSize = 128; 
-        
+
+        // More precise FFT and smoothing
+        analyser.fftSize = FFT_SIZE; // 2048 -> frequencyBinCount = 1024
+        analyser.smoothingTimeConstant = SMOOTHING;
+
         microphone = audioCtx.createMediaStreamSource(stream);
         microphone.connect(analyser);
 
-        bufferLength = analyser.frequencyBinCount;
+        bufferLength = analyser.frequencyBinCount; // FFT_SIZE / 2
         dataArray = new Uint8Array(bufferLength);
 
         startButton.style.display = 'none';
+        stopButton.style.display = 'inline-block';
         isVisualizing = true;
         draw();
       } catch (err) {
@@ -106,41 +137,119 @@
       }
     }
 
-    function draw() {
-      if (!isVisualizing) return;
+    function stopAudio() {
+      if (!audioCtx) return;
+      // Stop the animation
+      isVisualizing = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
 
-      requestAnimationFrame(draw);
+      // Close audio context to release microphone
+      if (audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => {});
+      }
+      audioCtx = null;
+      analyser = null;
+      microphone = null;
+      dataArray = null;
+      bufferLength = 0;
 
-      // Get audio frequency data
-      analyser.getByteFrequencyData(dataArray);
+      stopButton.style.display = 'none';
+      startButton.style.display = 'inline-block';
 
-      // Clear canvas
+      // clear canvas
       ctx.fillStyle = '#161b22';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
-      const barWidth = (canvas.width / bufferLength) * 1.5;
-      let barHeight;
+    // Helper: draw rounded rect (fallback if roundRect not supported)
+    function drawRoundedRect(x, y, w, h, r) {
+      const radius = typeof r === 'number' ? r : Math.max(0, Math.min(w, h) / 4);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Draw loop with log-averaged bins for perceptual precision
+    function draw() {
+      if (!isVisualizing || !analyser) return;
+      rafId = requestAnimationFrame(draw);
+
+      analyser.getByteFrequencyData(dataArray);
+
+      // Clear canvas (use CSS size for drawing coordinates because we set transform for DPR)
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
+      ctx.fillStyle = '#161b22';
+      ctx.fillRect(0, 0, w, h);
+
+      // Determine number of bars based on canvas width for clarity
+      const targetBarWidth = 6; // px
+      const numBars = Math.max(32, Math.min(256, Math.floor(w / targetBarWidth)));
+
+      // Use log spacing of frequency bins to match human hearing
+      const startFreq = 0; // index
+      const endFreq = bufferLength - 1; // highest bin index
+
       let x = 0;
+      const barWidth = w / numBars;
 
-      for (let i = 0; i < bufferLength; i++) {
-        barHeight = (dataArray[i] / 255) * canvas.height;
+      for (let i = 0; i < numBars; i++) {
+        // Compute logarithmic bin range for this bar
+        const logStart = Math.floor(Math.pow(i / numBars, 2) * endFreq);
+        const logEnd = Math.floor(Math.pow((i + 1) / numBars, 2) * endFreq);
+        const from = Math.min(Math.max(logStart, 0), endFreq);
+        const to = Math.min(Math.max(logEnd, from), endFreq);
 
-        // Dynamic color gradient based on frequency height
-        const hue = i * (360 / bufferLength);
-        ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+        // Average magnitude across the range
+        let sum = 0;
+        let count = 0;
+        for (let j = from; j <= to; j++) {
+          sum += dataArray[j];
+          count++;
+        }
+        const magnitude = count > 0 ? sum / count : 0;
 
-        // Draw spectrum bar with rounded top corners
-        ctx.beginPath();
-        ctx.roundRect(x, canvas.height - barHeight, barWidth - 3, barHeight, [4, 4, 0, 0]);
-        ctx.fill();
+        // Normalize and map to canvas height (use a slight nonlinear boost for low levels)
+        const normalized = Math.pow(magnitude / 255, 0.9);
+        const barHeight = normalized * h;
+
+        // Color mapping: hue based on normalized height, more precise coloration
+        const hue = 220 - (normalized * 220); // blue -> cyan -> green
+        const saturation = Math.max(45, 60 + normalized * 20);
+        const lightness = 40 + normalized * 20;
+        ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+        // Draw rounded bar
+        const px = x + 2; // small inner padding
+        const pw = Math.max(2, barWidth - 4);
+        const py = h - barHeight;
+        const radius = Math.min(6, pw / 2, 12);
+
+        // Use native roundRect when available for slightly better corners
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(px, py, pw, barHeight, radius);
+          ctx.fill();
+        } else {
+          drawRoundedRect(px, py, pw, barHeight, radius);
+        }
 
         x += barWidth;
       }
     }
 
-    startButton.addEventListener('click', () => {
-      initAudio();
-    });
+    startButton.addEventListener('click', () => initAudio());
+    stopButton.addEventListener('click', () => stopAudio());
+
+    // Clear canvas initially
+    ctx.fillStyle = '#161b22';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   </script>
 </body>
 </html>
