@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Real-Time Audio Spectrum</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #0e1117;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    h1 {
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 1.5rem;
+      letter-spacing: 0.5px;
+    }
+    p {
+      color: #8b949e;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    button {
+      background-color: #238636;
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      margin-bottom: 24px;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    canvas {
+      background: #161b22;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid #30363d;
+      max-width: 90vw;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Real-Time Audio Spectrum</h1>
+  <p>Click start to visualize ambient sounds from your microphone.</p>
+  <button id="startButton">Start Microphone</button>
+  
+  <canvas id="canvas" width="800" height="400"></canvas>
+
+  <script>
+    const startButton = document.getElementById('startButton');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let audioCtx;
+    let analyser;
+    let microphone;
+    let dataArray;
+    let bufferLength;
+    let isVisualizing = false;
+
+    async function initAudio() {
+      try {
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Initialize Web Audio Context
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        
+        // Fast Fourier Transform size (controls resolution of frequencies)
+        analyser.fftSize = 128; 
+        
+        microphone = audioCtx.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+
+        startButton.style.display = 'none';
+        isVisualizing = true;
+        draw();
+      } catch (err) {
+        alert('Microphone access denied or not supported by your browser.');
+        console.error(err);
+      }
+    }
+
+    function draw() {
+      if (!isVisualizing) return;
+
+      requestAnimationFrame(draw);
+
+      // Get audio frequency data
+      analyser.getByteFrequencyData(dataArray);
+
+      // Clear canvas
+      ctx.fillStyle = '#161b22';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 1.5;
+      let barHeight;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        barHeight = (dataArray[i] / 255) * canvas.height;
+
+        // Dynamic color gradient based on frequency height
+        const hue = i * (360 / bufferLength);
+        ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+
+        // Draw spectrum bar with rounded top corners
+        ctx.beginPath();
+        ctx.roundRect(x, canvas.height - barHeight, barWidth - 3, barHeight, [4, 4, 0, 0]);
+        ctx.fill();
+
+        x += barWidth;
+      }
+    }
+
+    startButton.addEventListener('click', () => {
+      initAudio();
+    });
+  </script>
+</body>
+</html>
