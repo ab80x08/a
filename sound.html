@@ -5,131 +5,135 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Real-Time Audio Spectrum (Precise)</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: #0e1117;
-      color: #ffffff;
+      background-color: #0e1117; color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      overflow: hidden;
-      padding: 24px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; overflow: hidden; padding: 20px;
     }
-    h1 {
-      margin-bottom: 8px;
-      font-weight: 600;
-      font-size: 1.25rem;
-      letter-spacing: 0.5px;
-    }
-    p {
-      color: #8b949e;
-      margin-bottom: 16px;
-      font-size: 0.9rem;
-    }
-    .controls {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    button {
-      background-color: #238636;
-      color: #ffffff;
-      border: none;
-      padding: 10px 18px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
+    h1 { margin-bottom: 8px; font-weight: 600; font-size: 1.25rem; letter-spacing: 0.5px; }
+    p { color: #8b949e; margin-bottom: 12px; font-size: 0.9rem; }
+    .controls { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    button, .btn {
+      background-color: #238636; color: #fff; border: none; padding: 8px 14px; font-size: 0.95rem; font-weight: 600; border-radius: 6px; cursor: pointer;
       transition: background-color 0.15s ease, transform 0.06s ease;
     }
-    button:hover { background-color: #2ea043; }
-    button:active { transform: scale(0.99); }
-    canvas {
-      background: #161b22;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      border: 1px solid #30363d;
-      width: 90vw;
-      max-width: 1200px;
-      height: 320px;
-    }
-    .note { color: #8b949e; font-size: 0.8rem; margin-top: 12px; }
+    button:hover, .btn:hover { background-color: #2ea043; }
+    .btn.secondary { background: #1f2937; }
+    .switch { display: inline-flex; align-items: center; gap: 8px; color: #8b949e; }
+    label { font-size: 0.9rem; color: #8b949e; }
+    canvas { background: #161b22; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #30363d; width: 90vw; max-width: 1200px; height: 360px; }
+    .note { color: #8b949e; font-size: 0.8rem; margin-top: 10px; }
   </style>
 </head>
 <body>
-
   <h1>Real-Time Audio Spectrum</h1>
-  <p>Click Start to visualize ambient sounds from your microphone. This view uses higher FFT resolution and perceptual (log) frequency grouping for improved precision.</p>
+  <p>High-precision spectrum: frequency labels, dB scale, peak-hold, and performance mode.</p>
 
   <div class="controls">
     <button id="startButton">Start Microphone</button>
     <button id="stopButton" style="display:none; background:#c026d3">Stop</button>
+
+    <div class="switch">
+      <input type="checkbox" id="peakHold" /> <label for="peakHold">Peak hold</label>
+    </div>
+
+    <div class="switch">
+      <input type="checkbox" id="perfMode" /> <label for="perfMode">Performance mode</label>
+    </div>
+
+    <button id="resetPeaks" class="btn secondary">Reset peaks</button>
   </div>
 
-  <canvas id="canvas" width="800" height="320"></canvas>
-  <div class="note">Higher FFT size + log-average bins = better frequency precision for human hearing.</div>
+  <canvas id="canvas" width="1200" height="360"></canvas>
+  <div class="note">Tip: Performance mode lowers FFT and frame rate to save CPU. Peak-hold keeps recent maxima.</div>
 
   <script>
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
+    const peakHoldCheckbox = document.getElementById('peakHold');
+    const perfModeCheckbox = document.getElementById('perfMode');
+    const resetPeaksBtn = document.getElementById('resetPeaks');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d', { alpha: false });
 
-    let audioCtx;
-    let analyser;
-    let microphone;
-    let dataArray;
-    let bufferLength;
+    // Audio variables
+    let audioCtx = null;
+    let analyser = null;
+    let microphone = null;
+    let floatData = null; // Float32Array for dB values
+    let bufferLength = 0;
+
+    // Visualization state
     let rafId = null;
     let isVisualizing = false;
+    let peaks = [];
+    let peakTimestamps = [];
 
-    // Precision settings
-    const FFT_SIZE = 2048; // higher FFT for better frequency resolution (power of two)
-    const SMOOTHING = 0.85; // smoothingTimeConstant for temporal smoothing
+    // Settings (tunable)
+    const SETTINGS = {
+      hi: { FFT_SIZE: 2048, SMOOTHING: 0.85, targetFPS: 60 },
+      perf: { FFT_SIZE: 1024, SMOOTHING: 0.65, targetFPS: 30 }
+    };
 
-    // Resize canvas for high-DPI displays
+    let mode = 'hi'; // 'hi' or 'perf'
+
+    // dB range used for normalization
+    const MIN_DB = -100;
+    const MAX_DB = -20;
+
+    // Peak hold decay (dB per second)
+    const PEAK_DECAY_DB_PER_S = 24; // how quickly peaks fall (higher = faster decay)
+
+    // Resize canvas for high-DPI
     function resizeCanvas() {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      const width = Math.max(300, rect.width);
-      const height = Math.max(120, rect.height);
+      const width = Math.max(300, rect.width || 1200);
+      const height = Math.max(120, rect.height || 360);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       canvas.style.width = width + 'px';
       canvas.style.height = height + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing operations
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    function applyModeSettings() {
+      if (!analyser) return;
+      const s = mode === 'hi' ? SETTINGS.hi : SETTINGS.perf;
+      analyser.fftSize = s.FFT_SIZE;
+      analyser.smoothingTimeConstant = s.SMOOTHING;
+      bufferLength = analyser.frequencyBinCount;
+      floatData = new Float32Array(bufferLength);
+
+      // reset peaks array to match new resolution
+      peaks = new Array(getNumBars()).fill(MIN_DB);
+      peakTimestamps = new Array(getNumBars()).fill(0);
+    }
+
+    // Start audio and visualization
     async function initAudio() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
 
-        // More precise FFT and smoothing
-        analyser.fftSize = FFT_SIZE; // 2048 -> frequencyBinCount = 1024
-        analyser.smoothingTimeConstant = SMOOTHING;
+        // default settings
+        mode = perfModeCheckbox.checked ? 'perf' : 'hi';
+        analyser.minDecibels = MIN_DB;
+        analyser.maxDecibels = MAX_DB;
+        applyModeSettings();
 
         microphone = audioCtx.createMediaStreamSource(stream);
         microphone.connect(analyser);
 
-        bufferLength = analyser.frequencyBinCount; // FFT_SIZE / 2
-        dataArray = new Uint8Array(bufferLength);
-
         startButton.style.display = 'none';
         stopButton.style.display = 'inline-block';
         isVisualizing = true;
+        lastDrawTime = performance.now();
         draw();
       } catch (err) {
         alert('Microphone access denied or not supported by your browser.');
@@ -139,117 +143,202 @@
 
     function stopAudio() {
       if (!audioCtx) return;
-      // Stop the animation
       isVisualizing = false;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = null;
 
-      // Close audio context to release microphone
-      if (audioCtx.state !== 'closed') {
-        audioCtx.close().catch(() => {});
-      }
-      audioCtx = null;
-      analyser = null;
-      microphone = null;
-      dataArray = null;
-      bufferLength = 0;
+      if (audioCtx.state !== 'closed') audioCtx.close().catch(() => {});
+      audioCtx = null; analyser = null; microphone = null; floatData = null; bufferLength = 0;
 
       stopButton.style.display = 'none';
       startButton.style.display = 'inline-block';
 
       // clear canvas
-      ctx.fillStyle = '#161b22';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
+      ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, w, h);
     }
 
-    // Helper: draw rounded rect (fallback if roundRect not supported)
-    function drawRoundedRect(x, y, w, h, r) {
-      const radius = typeof r === 'number' ? r : Math.max(0, Math.min(w, h) / 4);
-      ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.arcTo(x + w, y, x + w, y + h, radius);
-      ctx.arcTo(x + w, y + h, x, y + h, radius);
-      ctx.arcTo(x, y + h, x, y, radius);
-      ctx.arcTo(x, y, x + w, y, radius);
-      ctx.closePath();
-      ctx.fill();
+    // Compute number of bars to draw
+    function getNumBars() {
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const targetBarWidth = 6; // px
+      return Math.max(24, Math.min(256, Math.floor(w / targetBarWidth)));
     }
 
-    // Draw loop with log-averaged bins for perceptual precision
-    function draw() {
+    // Convert dB value to normalized 0..1
+    function dbToNorm(db) {
+      return Math.min(1, Math.max(0, (db - MIN_DB) / (MAX_DB - MIN_DB)));
+    }
+
+    // Map a frequency (Hz) to approximate x coordinate based on log spacing used in bars
+    function freqToX(freq, fftSize, sampleRate, numBars, w) {
+      // approximate bin index for frequency
+      const bin = Math.round(freq / (sampleRate / fftSize));
+      // Map bin index to bar index using the same log mapping as draw
+      const endFreq = fftSize / 2 - 1;
+      // find bar index where bin falls into
+      for (let i = 0; i < numBars; i++) {
+        const logStart = Math.floor(Math.pow(i / numBars, 2) * endFreq);
+        const logEnd = Math.floor(Math.pow((i + 1) / numBars, 2) * endFreq);
+        if (bin >= logStart && bin <= logEnd) {
+          const barWidth = w / numBars;
+          return i * barWidth + barWidth / 2;
+        }
+      }
+      return null;
+    }
+
+    let lastDrawTime = 0;
+
+    // Main draw loop
+    function draw(now) {
       if (!isVisualizing || !analyser) return;
       rafId = requestAnimationFrame(draw);
 
-      analyser.getByteFrequencyData(dataArray);
+      const s = mode === 'hi' ? SETTINGS.hi : SETTINGS.perf;
+      const targetInterval = 1000 / s.targetFPS;
+      if (now - lastDrawTime < targetInterval) return; // throttle for performance mode
+      lastDrawTime = now;
 
-      // Clear canvas (use CSS size for drawing coordinates because we set transform for DPR)
+      // Read float frequency data (dB)
+      analyser.getFloatFrequencyData(floatData);
+
       const w = canvas.width / (window.devicePixelRatio || 1);
       const h = canvas.height / (window.devicePixelRatio || 1);
-      ctx.fillStyle = '#161b22';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, w, h);
 
-      // Determine number of bars based on canvas width for clarity
-      const targetBarWidth = 6; // px
-      const numBars = Math.max(32, Math.min(256, Math.floor(w / targetBarWidth)));
-
-      // Use log spacing of frequency bins to match human hearing
-      const startFreq = 0; // index
-      const endFreq = bufferLength - 1; // highest bin index
-
-      let x = 0;
+      const numBars = getNumBars();
       const barWidth = w / numBars;
+      const sampleRate = audioCtx.sampleRate;
+      const fftSize = analyser.fftSize;
+      const endFreq = bufferLength - 1;
 
+      // Draw dB grid (left axis)
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      const dbStep = 10;
+      for (let db = MAX_DB; db >= MIN_DB; db -= dbStep) {
+        const y = h - dbToNorm(db) * h;
+        ctx.globalAlpha = 0.12;
+        ctx.fillRect(48, y, w - 56, 1); // light grid
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#8b949e';
+        ctx.fillText(db + ' dB', 6, y - 6);
+      }
+
+      // Prepare peaks if needed
+      const nowTs = performance.now() / 1000; // seconds
+
+      // Draw bars
+      let x = 0;
       for (let i = 0; i < numBars; i++) {
-        // Compute logarithmic bin range for this bar
         const logStart = Math.floor(Math.pow(i / numBars, 2) * endFreq);
         const logEnd = Math.floor(Math.pow((i + 1) / numBars, 2) * endFreq);
         const from = Math.min(Math.max(logStart, 0), endFreq);
         const to = Math.min(Math.max(logEnd, from), endFreq);
 
-        // Average magnitude across the range
-        let sum = 0;
-        let count = 0;
-        for (let j = from; j <= to; j++) {
-          sum += dataArray[j];
-          count++;
+        // Average dB across the range
+        let sum = 0; let count = 0;
+        for (let j = from; j <= to; j++) { sum += floatData[j]; count++; }
+        const magnitudeDb = count > 0 ? (sum / count) : MIN_DB;
+
+        // Peak hold logic
+        if (peakHoldCheckbox.checked) {
+          if (!peaks[i]) peaks[i] = magnitudeDb;
+          if (!peakTimestamps[i]) peakTimestamps[i] = nowTs;
+
+          // Update peak if current is higher
+          if (magnitudeDb > peaks[i]) {
+            peaks[i] = magnitudeDb;
+            peakTimestamps[i] = nowTs;
+          } else {
+            // Decay peak over time
+            const age = nowTs - peakTimestamps[i];
+            peaks[i] = peaks[i] - PEAK_DECAY_DB_PER_S * age * 0.016; // small step per frame (approx)
+            // clamp
+            if (peaks[i] < magnitudeDb) peaks[i] = magnitudeDb;
+            peakTimestamps[i] = nowTs;
+          }
         }
-        const magnitude = count > 0 ? sum / count : 0;
 
-        // Normalize and map to canvas height (use a slight nonlinear boost for low levels)
-        const normalized = Math.pow(magnitude / 255, 0.9);
-        const barHeight = normalized * h;
+        const norm = dbToNorm(magnitudeDb);
+        const barHeight = norm * h;
 
-        // Color mapping: hue based on normalized height, more precise coloration
-        const hue = 220 - (normalized * 220); // blue -> cyan -> green
-        const saturation = Math.max(45, 60 + normalized * 20);
-        const lightness = 40 + normalized * 20;
+        // Color mapping
+        const hue = 220 - (norm * 220);
+        const saturation = Math.max(45, 60 + norm * 20);
+        const lightness = 40 + norm * 20;
         ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 
-        // Draw rounded bar
-        const px = x + 2; // small inner padding
+        const px = x + 48; // leave space for dB labels on left
         const pw = Math.max(2, barWidth - 4);
         const py = h - barHeight;
         const radius = Math.min(6, pw / 2, 12);
 
-        // Use native roundRect when available for slightly better corners
+        // Draw bar (rounded)
         if (ctx.roundRect) {
-          ctx.beginPath();
-          ctx.roundRect(px, py, pw, barHeight, radius);
-          ctx.fill();
+          ctx.beginPath(); ctx.roundRect(px, py, pw, barHeight, radius); ctx.fill();
         } else {
-          drawRoundedRect(px, py, pw, barHeight, radius);
+          // fallback rounded rect
+          ctx.beginPath();
+          ctx.moveTo(px + radius, py);
+          ctx.arcTo(px + pw, py, px + pw, py + barHeight, radius);
+          ctx.arcTo(px + pw, py + barHeight, px, py + barHeight, radius);
+          ctx.arcTo(px, py + barHeight, px, py, radius);
+          ctx.arcTo(px, py, px + pw, py, radius);
+          ctx.closePath(); ctx.fill();
+        }
+
+        // Draw peak marker
+        if (peakHoldCheckbox.checked && peaks[i] !== undefined) {
+          const peakNorm = dbToNorm(peaks[i]);
+          const peakY = h - peakNorm * h;
+          ctx.fillStyle = '#fff';
+          ctx.globalAlpha = 0.9;
+          ctx.fillRect(px, peakY - 2, pw, 2);
+          ctx.globalAlpha = 1;
         }
 
         x += barWidth;
       }
+
+      // Frequency ticks/labels (common musical/round frequencies)
+      const freqs = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 16000];
+      ctx.fillStyle = '#8b949e'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      for (const f of freqs) {
+        const fx = freqToX(f, fftSize, sampleRate, numBars, w);
+        if (fx !== null) {
+          const drawX = fx + 48;
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(drawX - 0.5, h - 18, 1, 12);
+          ctx.globalAlpha = 1;
+          ctx.fillText((f >= 1000) ? (f / 1000) + 'k' : f + 'Hz', drawX, h - 16);
+        }
+      }
+
+      // Left margin label
+      ctx.fillStyle = '#8b949e'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      ctx.fillText('dB', 6, 14);
     }
 
+    // UI handlers
     startButton.addEventListener('click', () => initAudio());
     stopButton.addEventListener('click', () => stopAudio());
 
-    // Clear canvas initially
-    ctx.fillStyle = '#161b22';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    perfModeCheckbox.addEventListener('change', () => {
+      mode = perfModeCheckbox.checked ? 'perf' : 'hi';
+      applyModeSettings();
+    });
+
+    resetPeaksBtn.addEventListener('click', () => {
+      peaks = new Array(getNumBars()).fill(MIN_DB);
+      peakTimestamps = new Array(getNumBars()).fill(0);
+    });
+
+    // Initial clear
+    ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   </script>
 </body>
 </html>
