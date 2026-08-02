@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meherab's Delay Tracker</title>
+    <title>Nasum's Delay Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; }
@@ -14,28 +14,30 @@
 <body>
 
 <div class="container">
-    <h2>Meherab's Delay Logs</h2>
-    <h5><i>Month - April</i></h5>
+    <h2>Nasum's Delay Logs</h2>
+    <h5><i>Month - August 2026</i></h5>
     <canvas id="delayChart"></canvas>
 </div>
 
-    <p><b>D1 = 1/4/2026</b><br>D2 = 3/4/2026<br>D3 = 4/4/2026<br>D4 = 5/4/2026<br>D5 = 10/4/2026<br>D6 = 11/4/2026<br>D7 = 13/4/2026<br>D8 = 16/4/2026<br>D9 = 17/4/2026<br>D10 = 18/4/2026<br><b>D11 = 22/4/2026</b><br>D12 = 24/4/2026<br>D13 = 30/4/2026</p>
+    <p>D1 = 1<br>
+       D2 = 2<br>
+    </p>
 
 <script>
     const taskData = [
-        { day: 1, delay: 60 },
-        { day: 2, delay: 7 },
-        { day: 3, delay: 8 },
+        { day: 1, delay: 24.75 },
+        { day: 2, delay: 0 },
+        { day: 3, delay: 0 },
         { day: 4, delay: 0 },
-        { day: 5, delay: 10.25 },
-        { day: 6, delay: 8.15 },
-        { day: 7, delay: 9.5 },
+        { day: 5, delay: 0 },
+        { day: 6, delay: 0 },
+        { day: 7, delay: 0 },
         { day: 8, delay: 0 },
-        { day: 9, delay: 6.75 },
-        { day: 10, delay: 11.5 },
-        { day: 11, delay: 5 },
-        { day: 12, delay: 13 },
-        { day: 13, delay: 9.25 }
+        { day: 9, delay: 0 },
+        { day: 10, delay: 0 },
+        { day: 11, delay: 0 },
+        { day: 12, delay: 0 },
+        { day: 13, delay: 0 }
     ];
     
     const ctx = document.getElementById('delayChart').getContext('2d');
