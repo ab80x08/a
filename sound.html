@@ -1,1 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spectrogram & Spectrum — Ambient Sound Visualizer</title>
+  <style>
+    :root{--bg:#0b0b0f;--panel:#0f1720;--accent:#00d4ff;--muted:#9aa4b2;}
+    html,body{height:100%;margin:0;background:var(--bg);color:#e6eef6;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif}
+    .app{display:flex;flex-direction:column;height:100vh}
+    header{padding:12px 16px;display:flex;gap:12px;align-items:center;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
+    h1{font-size:16px;margin:0}
+    .controls{display:flex;gap:8px;align-items:center;margin-left:auto}
+    select,input,button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:6px 8px;border-radius:6px}
+    button.primary{background:var(--accent);color:#021018;border:none}
+    main{display:flex;flex:1;gap:12px;padding:12px}
+    .left,.right{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .left{flex:1;display:flex;flex-direction:column}
+    .right{width:360px;display:flex;flex-direction:column}
+    .canvas-wrap{position:relative;flex:1;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.02)}
+    canvas{display:block;width:100%;height:100%}
+    .status{margin-top:8px;color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+    label{font-size:13px;color:var(--muted)}
+    .legend{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+    .slider{width:100%}
+    .footer{padding:8px 12px;color:var(--muted);font-size:12px;border-top:1px solid rgba(255,255,255,0.02)}
+    .small{font-size:12px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .kbd{background:rgba(255,255,255,0.03);padding:2px 6px;border-radius:6px;font-family:monospace}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Spectrogram & Spectrum — Ambient Sound Visualizer</h1>
+      <div class="controls">
+        <select id="deviceSelect"></select>
+        <select id="fftSelect" title="FFT Size">
+          <option>2048</option>
+          <option>4096</option>
+          <option selected>8192</option>
+          <option>16384</option>
+          <option>32768</option>
+        </select>
+        <select id="scaleSelect" title="Frequency scale">
+          <option value="log">Log</option>
+          <option value="linear">Linear</option>
+        </select>
+        <button id="startBtn" class="primary">Start</button>
+        <button id="stopBtn">Stop</button>
+        <button id="screenshotBtn">Screenshot</button>
+      </div>
+    </header>
 
+    <main>
+      <section class="left">
+        <div class="canvas-wrap" id="spectrogramWrap">
+          <canvas id="spectrogramCanvas"></canvas>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Window: <select id="windowSelect"><option>hann</option><option>hamming</option><option>blackman</option></select></label>
+          </div>
+          <div style="width:200px">
+            <label>Range (dB): <span id="dbRangeLabel">-120 — -10</span></label>
+            <input id="minDb" type="range" min="-160" max="-10" value="-120" class="slider">
+            <input id="maxDb" type="range" min="-160" max="0" value="-10" class="slider">
+          </div>
+        </div>
+        <div class="row">
+          <div class="legend">
+            <span class="kbd">Cursor</span> <span id="cursorInfo" class="muted">Freq: — Hz • Level: — dB</span>
+          </div>
+          <div style="margin-left:auto" class="legend">
+            <label><input type="checkbox" id="peakHold"> Peak hold</label>
+            <label style="margin-left:6px"><input type="checkbox" id="invert"> Invert colors</label>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right">
+        <div>
+          <h3 style="margin:0 0 8px 0">Spectrum</h3>
+          <div class="canvas-wrap" style="height:260px"><canvas id="spectrumCanvas"></canvas></div>
+          <div class="status" id="status">Inactive</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h4 style="margin:0 0 8px 0">Options & Info</h4>
+          <div class="small">Sample rate: <span id="sampleRate">—</span></div>
+          <div class="small">Bins: <span id="bins">—</span>, Resolution: <span id="res">—</span> Hz</div>
+          <div class="small">Press <span class="kbd">Space</span> to pause/resume. Click spectrogram to place cursor.</div>
+        </div>
+      </aside>
+    </main>
+
+    <div class="footer">Built with Web Audio API — high resolution FFT, real-time spectrogram. Works best on desktop browsers with Microphone permission.</div>
+  </div>
+
+  <script>
+    // Helper utilities
+    const $ = id => document.getElementById(id);
+    let audioCtx, analyser, sourceNode, stream;
+    let rafId, spectrogramCtx, spectrumCtx;
+    let width, height; // canvas pixel sizes
+    let spectrogramImage; // ImageData for spectrogram shifting
+    let paused = false;
+    let peakHold = false;
+    let peakData = null;
+
+    async function enumerateInputs() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter(d => d.kind === 'audioinput');
+        const sel = $('deviceSelect');
+        sel.innerHTML = '';
+        mics.forEach((m,i)=>{
+          const o = document.createElement('option');
+          o.value = m.deviceId;
+          o.textContent = m.label || `Microphone ${i+1}`;
+          sel.appendChild(o);
+        });
+        if(mics.length===0){
+          const o = document.createElement('option'); o.textContent='Default microphone'; o.value='default'; sel.appendChild(o);
+        }
+      } catch(e){ console.warn('enumerate error',e); }
+    }
+
+    function makeAudioContext(){
+      if(!audioCtx || audioCtx.state==='closed') audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    async function start(){
+      try{
+        const deviceId = $('deviceSelect').value || undefined;
+        const constraints = {audio:{deviceId: deviceId!=='default'?{exact:deviceId}:undefined}};
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        audioCtx = makeAudioContext();
+        sourceNode = audioCtx.createMediaStreamSource(stream);
+
+        const fftSize = parseInt($('fftSelect').value,10)||8192;
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = Math.max(2048, Math.min(32768, fftSize));
+        analyser.smoothingTimeConstant = 0.2;
+        analyser.minDecibels = -160;
+        analyser.maxDecibels = 0;
+
+        sourceNode.connect(analyser);
+
+        // Prepare canvases
+        prepareCanvases();
+
+        $('status').textContent = 'Running';
+        $('sampleRate').textContent = audioCtx.sampleRate + ' Hz';
+        updateInfo();
+
+        peakData = new Float32Array(analyser.frequencyBinCount).fill(-Infinity);
+        peakHold = $('peakHold').checked;
+
+        renderLoop();
+      }catch(err){
+        console.error(err); alert('Could not access microphone: '+err.message);
+      }
+    }
+
+    function stop(){
+      cancelAnimationFrame(rafId);
+      if(stream){
+        stream.getTracks().forEach(t=>t.stop());
+        stream=null;
+      }
+      if(audioCtx){
+        audioCtx.close();
+        audioCtx=null;
+      }
+      $('status').textContent='Inactive';
+    }
+
+    function prepareCanvases(){
+      const spec = $('spectrogramCanvas');
+      const specWrap = document.getElementById('spectrogramWrap');
+      spec.width = specWrap.clientWidth * devicePixelRatio;
+      spec.height = specWrap.clientHeight * devicePixelRatio;
+      spectrogramCtx = spec.getContext('2d');
+      spectrogramCtx.fillStyle = '#000';
+      spectrogramCtx.fillRect(0,0,spec.width,spec.height);
+
+      const sp = $('spectrumCanvas');
+      sp.width = sp.parentElement.clientWidth * devicePixelRatio;
+      sp.height = sp.parentElement.clientHeight * devicePixelRatio;
+      spectrumCtx = sp.getContext('2d');
+      spectrumCtx.fillStyle='#00111a';
+      spectrumCtx.fillRect(0,0,sp.width,sp.height);
+
+      width = spec.width; height = spec.height;
+      spectrogramImage = spectrogramCtx.getImageData(0,0,width,height);
+
+      // Handle resize
+      window.addEventListener('resize', ()=>{ clearTimeout(window._res); window._res=setTimeout(prepareCanvases,200); });
+
+      // Cursor click
+      spec.addEventListener('pointerdown', e=>{
+        const rect = spec.getBoundingClientRect();
+        const x = (e.clientX-rect.left) * devicePixelRatio;
+        const y = (e.clientY-rect.top) * devicePixelRatio;
+        updateCursorInfoFromY(y);
+      });
+    }
+
+    function updateInfo(){
+      if(!analyser) return;
+      const bins = analyser.frequencyBinCount;
+      $('bins').textContent = bins;
+      const res = (audioCtx.sampleRate/2)/bins;
+      $('res').textContent = res.toFixed(3);
+      $('dbRangeLabel').textContent = `${$('minDb').value} — ${$('maxDb').value}`;
+    }
+
+    function renderLoop(){
+      rafId = requestAnimationFrame(renderLoop);
+      if(paused || !analyser) return;
+
+      const bins = analyser.frequencyBinCount;
+      const floatData = new Float32Array(bins);
+      analyser.getFloatFrequencyData(floatData); // dB values
+
+      // Update peak hold
+      if(peakHold){
+        for(let i=0;i<bins;i++) peakData[i] = Math.max(peakData[i], floatData[i]);
+      } else { peakData.fill(-Infinity); }
+
+      // Draw spectrum
+      drawSpectrum(floatData, peakHold?peakData:null);
+      // Draw spectrogram column
+      drawSpectrogramColumn(floatData);
+
+      updateInfo();
+    }
+
+    function drawSpectrum(data, peaks){
+      const canvas = $('spectrumCanvas');
+      const ctx = spectrumCtx;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+
+      // background
+      const grd = ctx.createLinearGradient(0,0,0,h);
+      grd.addColorStop(0,'#042028'); grd.addColorStop(1,'#00111a');
+      ctx.fillStyle = grd; ctx.fillRect(0,0,w,h);
+
+      const minDb = parseFloat($('minDb').value); const maxDb = parseFloat($('maxDb').value);
+      const scale = $('scaleSelect').value;
+      const bins = data.length;
+
+      ctx.beginPath();
+      ctx.lineWidth = 2 * devicePixelRatio; ctx.strokeStyle = 'rgba(0,212,255,0.9)';
+      for(let i=0;i<bins;i++){
+        const freq = i * (audioCtx.sampleRate/2) / bins;
+        let x;
+        if(scale==='log'){
+          const f = Math.log10(Math.max(20,freq))/Math.log10(audioCtx.sampleRate/2||22050);
+          x = Math.max(0, Math.min(1, f)) * w;
+        } else x = (freq/(audioCtx.sampleRate/2)) * w;
+        const v = (data[i]-minDb)/(maxDb-minDb);
+        const y = h - Math.max(0,Math.min(1,v)) * h;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // Peaks
+      if(peaks){
+        ctx.beginPath(); ctx.lineWidth=1.2*devicePixelRatio; ctx.strokeStyle='rgba(255,200,50,0.9)';
+        for(let i=0;i<bins;i++){
+          const freq = i * (audioCtx.sampleRate/2) / bins;
+          let x = (freq/(audioCtx.sampleRate/2)) * w;
+          const v = (peaks[i]-parseFloat($('minDb').value))/(parseFloat($('maxDb').value)-parseFloat($('minDb').value));
+          const y = h - Math.max(0,Math.min(1,v)) * h;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+
+      // Axis labels
+      ctx.fillStyle='#9aa4b2'; ctx.font = `${12*devicePixelRatio}px sans-serif`;
+      const freqs = [20,50,100,200,500,1e3,2e3,5e3,1e4, audioCtx.sampleRate/2];
+      freqs.forEach(f=>{
+        if(f>audioCtx.sampleRate/2) return;
+        let x = (Math.log10(Math.max(20,f))/Math.log10(audioCtx.sampleRate/2)) * w;
+        if($('scaleSelect').value==='linear') x = (f/(audioCtx.sampleRate/2))*w;
+        ctx.fillText((f>=1000? (f/1000)+'k':f+'') , x+3, h-4);
+      });
+    }
+
+    function drawSpectrogramColumn(data){
+      const spec = $('spectrogramCanvas'); const ctx = spectrogramCtx;
+      const w = spec.width, h = spec.height;
+      // shift image 1px to left
+      const shift = 1 * devicePixelRatio;
+      const src = ctx.getImageData(shift,0,w-shift,h);
+      ctx.putImageData(src,0,0);
+      // draw new column at right
+      const image = ctx.createImageData(shift,h);
+
+      const bins = data.length;
+      const minDb = parseFloat($('minDb').value); const maxDb = parseFloat($('maxDb').value);
+      const scale = $('scaleSelect').value;
+      const invert = $('invert').checked;
+
+      for(let y=0;y<h;y++){
+        // map y to frequency index
+        let f;
+        if(scale==='log'){
+          const ratio = 1 - y/(h-1); // top high freq
+          const freq = Math.pow(10, Math.log10(20) + ratio*(Math.log10(audioCtx.sampleRate/2)-Math.log10(20)));
+          f = freq;
+        } else {
+          const ratio = 1 - y/(h-1);
+          const freq = ratio*(audioCtx.sampleRate/2);
+          f = Math.max(0,freq);
+        }
+        const bin = Math.round(f / (audioCtx.sampleRate/2) * (bins-1));
+        const dB = data[Math.max(0,Math.min(bins-1,bin))];
+        // map dB to color
+        const t = (dB - minDb) / (maxDb - minDb);
+        const v = Math.max(0, Math.min(1, t));
+        const color = colormap(v, invert);
+        const idx = (y*shift + 0)*4;
+        image.data[idx+0] = color[0]; image.data[idx+1] = color[1]; image.data[idx+2] = color[2]; image.data[idx+3] = 255;
+      }
+      ctx.putImageData(image, w-shift, 0);
+    }
+
+    function colormap(v, invert){
+      // simple plasma-like map from blue -> cyan -> yellow -> red
+      v = Math.max(0,Math.min(1,v));
+      const r = Math.floor(255*Math.pow(v,0.9));
+      const g = Math.floor(255*Math.pow(Math.max(0,1-Math.abs(v-0.5)*2),0.8));
+      const b = Math.floor(255*Math.pow(1-v,1.2));
+      if(invert) return [255-r,255-g,255-b];
+      return [r,g,b];
+    }
+
+    function updateCursorInfoFromY(y){
+      if(!audioCtx||!analyser) return;
+      const h = $('spectrogramCanvas').height;
+      const scale = $('scaleSelect').value;
+      const ratio = 1 - y/(h-1);
+      let freq;
+      if(scale==='log'){
+        freq = Math.pow(10, Math.log10(20) + ratio*(Math.log10(audioCtx.sampleRate/2)-Math.log10(20)));
+      } else freq = ratio*(audioCtx.sampleRate/2);
+      // get nearest bin level
+      const bins = analyser.frequencyBinCount;
+      const bin = Math.round(freq/(audioCtx.sampleRate/2)*(bins-1));
+      const arr = new Float32Array(bins); analyser.getFloatFrequencyData(arr);
+      const dB = arr[Math.max(0,Math.min(bins-1,bin))];
+      $('cursorInfo').textContent = `Freq: ${Math.round(freq)} Hz • Level: ${dB.toFixed(1)} dB`;
+    }
+
+    // Controls wiring
+    $('startBtn').addEventListener('click', ()=>{ start(); });
+    $('stopBtn').addEventListener('click', ()=>{ stop(); });
+    $('fftSelect').addEventListener('change', ()=>{ if(audioCtx && stream){ stop(); start(); } });
+    $('scaleSelect').addEventListener('change', ()=>{});
+    $('minDb').addEventListener('input', updateInfo);
+    $('maxDb').addEventListener('input', updateInfo);
+    $('peakHold').addEventListener('change', ()=>{ peakHold = $('peakHold').checked; if(!peakHold) peakData = new Float32Array(analyser?analyser.frequencyBinCount:1024).fill(-Infinity); });
+    $('screenshotBtn').addEventListener('click', ()=>{
+      const link = document.createElement('a');
+      const spec = $('spectrogramCanvas').toDataURL('image/png');
+      link.href = spec; link.download = 'spectrogram.png'; link.click();
+    });
+
+    // keyboard pause
+    window.addEventListener('keydown', e=>{ if(e.code==='Space'){ paused=!paused; e.preventDefault(); $('status').textContent = paused? 'Paused' : (stream?'Running':'Inactive'); } });
+
+    // On load
+    (async ()=>{
+      if(!navigator.mediaDevices){ alert('getUserMedia not supported'); return; }
+      await enumerateInputs();
+      // request permission early on some browsers to show labels
+      try{ await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){}
+
+      // prepare canvases initial
+      prepareCanvases();
+    })();
+
+    // Make sure file serves when opened from file:// or github pages
+    if(location.protocol==='file:'){
+      console.log('Running from file:// — microphone permissions may be restricted in some browsers.');
+    }
+  </script>
+</body>
+</html>
